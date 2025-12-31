@@ -1,0 +1,40 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# ===== Jupyter =====
+.ipynb_checkpoints/
+
+# ===== OS / Editor =====
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ===== Logs =====
+*.log
+
+# ===== Data / Models  =====
+data/
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.bin
+
+# ===== Embeddings / Index =====
+*.npy
+*.npz
+*.faiss
+*.index
+
+# ===== Optional: HuggingFace cache =====
+# .cache/
+# ~/.cache/

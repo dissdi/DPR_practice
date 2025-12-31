@@ -1,0 +1,15 @@
+encoder model: bert-base-uncased
+embedding max length = 256
+
+
+[Prepare data/embedding]
+download_data.py : download raw data
+build_passage.py, build_train.py : seperate raw data to build_passage and build_train (jsonl file)
+encode.py : encode jsonl file to .npy file
+
+[Train]
+
+
+[Inference]
+retriever.py : gets query On/Offline. return top k
+

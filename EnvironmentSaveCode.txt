@@ -1,0 +1,2 @@
+conda env export --no-builds | Out-File -Encoding utf8 environment.yml
+python -m pip freeze | Out-File -Encoding utf8 requirements.txt
