@@ -1,11 +1,10 @@
 encoder model: bert-base-uncased
 embedding max length = 128
 n_neg = 7
-batch = 16
 
 [Prepare data]
 download_data.py : download raw data
-make_short_dataset.py : make shortened dataset (for quick test)
+make_short_dataset.py : make shortened dataset (for quick test, this isn't essential)
 
 [Embedding]
 build_passage.py, build_question.py : build raw passage data to passage jsonl, build raw question data to question jsonl
