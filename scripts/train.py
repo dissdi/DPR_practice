@@ -1,46 +1,22 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from transformers import BertTokenizer, BertModel
 import json
 from tqdm import tqdm
 from pathlib import Path
+import pickle
 
-train_path = 'data/nq/train.jsonl'
-passages_path = 'data/nq/passages.jsonl'
+from model.DPRModel import DPRModel
+from transformers.utils import logging
+logging.set_verbosity_error()
+
+train_path = 'data/corpus/train.jsonl'
+passages_path = 'data/corpus/passages.jsonl'
+map_path = 'data/corpus/passage_map.pkl'
 checkpoint_path = 'checkpoints'
-
-class DPRModel(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.q_encoder = BertModel.from_pretrained("bert-base-uncased")
-        self.p_encoder = BertModel.from_pretrained("bert-base-uncased")
-        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-
-    def load_checkpoint(self, epoch_dir):
-        self.q_encoder = BertModel.from_pretrained(f"{epoch_dir}/q_encoder")
-        self.p_encoder = BertModel.from_pretrained(f"{epoch_dir}/p_encoder")
-        self.tokenizer = BertTokenizer.from_pretrained(f"{epoch_dir}/tokenizer")
-
-    def tokenize(self, text, MAX_LENGTH):
-        tokens = self.tokenizer(
-            text,
-            padding="max_length",
-            max_length=MAX_LENGTH,
-            truncation=True,
-            return_tensors="pt"
-        )
-        return tokens
-        
-    def encode_questions(self, q_input):
-        return self.q_encoder(**q_input).last_hidden_state[:, 0, :]
-
-    def encode_passages(self, p_input):
-        return self.p_encoder(**p_input).last_hidden_state[:, 0, :]
-
-    def forward(self, q_emb, p_emb):
-        return q_emb @ p_emb.T
     
+device = torch.device("cuda")    
+
 def load_jsonl(jsonl_path):
     data = []
     with open(jsonl_path, 'r', encoding='utf-8') as f: # read jsonl file
@@ -49,29 +25,25 @@ def load_jsonl(jsonl_path):
             data.append(json_object)
     return data
 
-def build_passage_text_map(passages_jsonl_path):
-    passage_map = {}
-    with open(passages_jsonl_path, "r", encoding="utf-8") as f:
-        for line in f:
-            item = json.loads(line)
-            pid = str(item["passage_id"])
-            title = item.get("title", "")
-            text = item.get("text", "")
-            passage_map[pid] = f"{title} [SEP] {text}"
-    return passage_map
+def load_passage_map(map_path):
+    with open(map_path, "rb") as f:
+        return pickle.load(f)
 
-
+print("load train jsonl")
 train_data = load_jsonl(train_path)
-passage_map = build_passage_text_map(passages_path)
 
+print("load passage map")
+passage_map = load_passage_map(map_path)
+
+print("load model")
 model = DPRModel()
 #model.load_checkpoint(checkpoint_path)
+model.to(device)
+model.train()
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-5)
-model.train()
-device = torch.device("cuda")
-model.to(device)
+
 
 batch = 16
 epochs = 3
@@ -84,35 +56,51 @@ for epoch in range(epochs):
     for i in pbar:
         optimizer.zero_grad()
         batch_samples = train_data[i:i+batch]
+        
+        # queries
         questions = [sample["question"] for sample in batch_samples]
-        pos_texts = [passage_map[sample["positive_passage_ids"][0]] for sample in batch_samples]
-        neg_texts = []
+        
+        # postive passages (title/text pair)
+        pos_titles, pos_texts = [], []
         for sample in batch_samples:
-            for n_pid in sample["negative_passage_ids"][:n_neg]:
-                neg_texts.append(passage_map[n_pid])
-        passages = pos_texts + neg_texts
+            pos_pid = int(sample["positive_passage_ids"][0])
+            t, x = passage_map[pos_pid]
+            pos_titles.append(t)
+            pos_texts.append(x)
         
-        # checker
-        # if i == 0:
-        #     print(f"i={i} B={len(batch_samples)} Q={len(questions)} P={len(pos_texts)} N={len(neg_texts)} All={len(passages)}")        
-        #     input("Enter to continue")
+        # negative passages (title/text pair)
+        neg_titles, neg_texts = [], []
+        for sample in batch_samples:
+            for neg_pid in sample["negative_passage_ids"][:n_neg]:
+                neg_pid = int(neg_pid)
+                t, x = passage_map[neg_pid]
+                neg_titles.append(t)
+                neg_texts.append(x)
         
-        q_tokens = model.tokenize(questions, MAX_LENGTH)
-        p_tokens = model.tokenize(passages, MAX_LENGTH)
+        passage_titles = pos_titles + neg_titles
+        passage_texts = pos_texts + neg_texts
+        
+        # tokenize
+        q_tokens = model.tokenize(questions, None, MAX_LENGTH)
+        p_tokens = model.tokenize(passage_titles, passage_texts, MAX_LENGTH)
+        
         q_tokens = {k: v.to(device) for k, v in q_tokens.items()}
         p_tokens = {k: v.to(device) for k, v in p_tokens.items()}
         
+        # encode
         q_input = model.encode_questions(q_tokens)
         p_input = model.encode_passages(p_tokens)
+        
         score = model.forward(q_input, p_input)
         labels = torch.arange(len(batch_samples), dtype=torch.long, device=device)
         
         loss = criterion(score, labels)
-        pbar.set_postfix(loss=loss.item())
         loss.backward()
         optimizer.step()
         
-    # checkpoint
+        pbar.set_postfix(loss=loss.item())
+        
+    # checkpoint save
     epoch_dir = Path("checkpoints") / f"epoch_{epoch:03d}"
     q_dir = epoch_dir / "q_encoder"
     p_dir = epoch_dir / "p_encoder"

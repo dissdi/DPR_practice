@@ -160,6 +160,7 @@ dependencies:
       - multidict==6.7.0
       - multiprocess==0.70.18
       - namex==0.1.0
+      - npy-append-array==0.9.19
       - opt-einsum==3.4.0
       - optree==0.18.0
       - pandas==2.3.3

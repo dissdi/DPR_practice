@@ -1,15 +1,22 @@
 encoder model: bert-base-uncased
-embedding max length = 256
+embedding max length = 128
+n_neg = 7
+batch = 16
 
-
-[Prepare data/embedding]
+[Prepare data]
 download_data.py : download raw data
-build_passage.py, build_train.py : seperate raw data to build_passage and build_train (jsonl file)
-encode.py : encode jsonl file to .npy file
+make_short_dataset.py : make shortened dataset (for quick test)
+
+[Embedding]
+build_passage.py, build_question.py : build raw passage data to passage jsonl, build raw question data to question jsonl
+
+(before do this, train model first)
+encode_data.py : encode jsonl file to .npy file
+build_faiss_index.py : build faiss file based on encoded passage data
 
 [Train]
-
+train.py : train model(p_encode, q_encode, tokenizer)
 
 [Inference]
-retriever.py : gets query On/Offline. return top k
+inference.py : gets query On/Offline. return top k
 
