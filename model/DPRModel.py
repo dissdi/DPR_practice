@@ -1,6 +1,5 @@
 from transformers import BertTokenizer, BertModel
 import torch.nn as nn
-import torch
 
 class DPRModel(nn.Module):
     def __init__(self):
@@ -37,12 +36,7 @@ class DPRModel(nn.Module):
         return self.q_encoder(**q_input).last_hidden_state[:, 0, :]
 
     def encode_passages(self, p_input):
-        out =  self.p_encoder(**p_input, output_hidden_states=True)
-        cls0 = out.last_hidden_state[:, 0, :]
-        cls_pooled = torch.zeros_like(cls0)
-        for h in out.hidden_states[1:]:
-            cls_pooled += h[:, 0, :]
-        return cls_pooled/len(out.hidden_states[1:])
-        
+        return self.p_encoder(**p_input).last_hidden_state[:, 0, :]
+
     def forward(self, q_emb, p_emb):
         return q_emb @ p_emb.T

@@ -3,18 +3,23 @@ embedding max length = 128
 n_neg = 7
 
 [Prepare data]
-download_data.py : download raw data
-make_short_dataset.py : make shortened dataset (for quick test, this isn't essential)
+1. download_data.py : download raw data
+2. make_short_dataset.py : make shortened dataset (for quick test, this isn't essential)
 
 [Embedding]
-build_passage.py, build_question.py : build raw passage data to passage jsonl, build raw question data to question jsonl
+3. build_passage.py, build_question.py : build raw passage data to passage jsonl, build raw question data to question jsonl
 
 (before do this, train model first)
-encode_data.py : encode jsonl file to .npy file
-build_faiss_index.py : build faiss file based on encoded passage data
+5. encode_data.py : encode jsonl file to .npy file
+6. build_faiss_index.py : build faiss file based on encoded passage data
 
 [Train]
-train.py : train model(p_encode, q_encode, tokenizer)
+4. train.py : train model(p_encode, q_encode, tokenizer)
 
 [Inference]
-inference.py : gets query On/Offline. return top k
+7. inference.py : gets query On/Offline. return top k
+
+!Check!
+Must modify psgs_XXX.txv of build_faiss_index and build_passage
+Full learning: tsv_path = "data/downloads/data/wikipedia_split/psgs_w100.tsv" 
+Short learning: tsv_path = "data/downloads/data/wikipedia_split/psgs_short.tsv" 

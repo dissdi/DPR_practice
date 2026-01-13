@@ -5,7 +5,7 @@ import csv
 
 passage_read_path = 'data/corpus/embeddings/passages_emb.npy'
 write_path = 'data/corpus/embeddings/passages.faiss'
-passage_jsonl_path = r'data\downloads\data\wikipedia_split\psgs_w100.tsv'
+passage_jsonl_path = r'data\downloads\data\wikipedia_split\psgs_short.tsv'
 
 passages = np.load(passage_read_path)
 pids = []
