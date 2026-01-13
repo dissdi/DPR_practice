@@ -2,9 +2,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import json
+import os
 from tqdm import tqdm
 from pathlib import Path
 import pickle
+from time import time
+from math import ceil
 
 from model.DPRModel import DPRModel
 from transformers.utils import logging
@@ -29,6 +32,18 @@ def load_passage_map(map_path):
     with open(map_path, "rb") as f:
         return pickle.load(f)
 
+def append_json_file(new_data, file_path):
+    if not os.path.isfile(file_path) or os.stat(file_path).st_size == 0:
+        file_data = []
+    else:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            file_data = json.load(file)
+            
+    file_data.append(new_data)
+    
+    with open(file_path, 'w', encoding='utf-8') as file:
+        json.dump(file_data, file, indent=4)
+
 print("load train jsonl")
 train_data = load_jsonl(train_path)
 
@@ -50,9 +65,15 @@ epochs = 3
 n_neg = 7 # number of negative
 MAX_LENGTH = 128
 
+train_loss_mean = [0 for i in range(epochs)]
+train_loss_last = [0 for i in range(epochs)]
+num_steps = ceil(len(train_data)/batch)
 for epoch in range(epochs):
     print(f"epoch {epoch}")
+    
+    
     pbar = tqdm(range(0, len(train_data), batch), desc="training")
+    time_start = time()
     for i in pbar:
         optimizer.zero_grad()
         batch_samples = train_data[i:i+batch]
@@ -99,6 +120,8 @@ for epoch in range(epochs):
         optimizer.step()
         
         pbar.set_postfix(loss=loss.item())
+        train_loss_mean[epoch] += loss.item()
+    time_end = time()    
         
     # checkpoint save
     epoch_dir = Path("checkpoints") / f"epoch_{epoch:03d}"
@@ -113,3 +136,12 @@ for epoch in range(epochs):
     model.q_encoder.save_pretrained(str(q_dir))
     model.p_encoder.save_pretrained(str(p_dir))
     model.tokenizer.save_pretrained(str(tok_dir))    
+    
+    # train statistic save
+    statistic = {
+        "train_loss_mean": train_loss_mean[epoch]/num_steps,
+        "steps": num_steps,
+        "epoch": epoch,
+        "train_time": time_end - time_start
+    }
+    append_json_file(statistic, 'statistics/statistic.json')
