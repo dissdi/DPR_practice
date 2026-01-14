@@ -1,20 +1,21 @@
+import argparse
+import sys
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import json
-import os
 from tqdm import tqdm
 from pathlib import Path
 import pickle
 from time import time
 from math import ceil
-import argparse
-import sys
 
 from model.DPR_Base import DPR_Base
 from model.DPR_Multi import DPR_Multi
 from model.DPR_SingleCarry import DPR_SingleCarry
 from model.DPR_MultiCarry import DPR_MultiCarry
+
 from transformers.utils import logging
 logging.set_verbosity_error()
 
@@ -49,12 +50,16 @@ def append_json_file(new_data, file_path):
     with open(file_path, 'w', encoding='utf-8') as file:
         json.dump(file_data, file, indent=4)
 
+# argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", 
                     type=str, 
                     choices=['Base', 'SingleCarry', 'Multi', 'MultiCarry'], 
                     required=True)
 args = parser.parse_args()
+if len(sys.argv) == 1:
+    parser.print_help()
+
 model_type = args.model
 
 print("load train jsonl")
@@ -148,7 +153,7 @@ for epoch in range(epochs):
     time_end = time()    
         
     # checkpoint save
-    epoch_dir = Path("checkpoints") / f"{model_type}" / f"epoch_{epoch:03d}"
+    epoch_dir = Path("checkpoints") / f"{model_type}" / f"epoch_{epoch+1:03d}"
     q_dir = epoch_dir / "q_encoder"
     p_dir = epoch_dir / "p_encoder"
     tok_dir = epoch_dir / "tokenizer"

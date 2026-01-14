@@ -4,8 +4,15 @@ import torch
 import os
 import numpy as np
 from tqdm import tqdm
-from model.DPR_SingleCarry import DPRModel
-    
+import argparse
+import sys
+from pathlib import Path
+
+from model.DPR_Base import DPR_Base
+from model.DPR_Multi import DPR_Multi
+from model.DPR_SingleCarry import DPR_SingleCarry
+from model.DPR_MultiCarry import DPR_MultiCarry
+
 def get_passage_list(passages_jsonl_path):
     passage_list = []
     with open(passages_jsonl_path, "r", encoding="utf-8") as f:
@@ -31,12 +38,36 @@ def append_json_file(new_data, file_path):
 faiss_path = "data/corpus/embeddings/passages.faiss"
 question_path = "data/corpus/dev.jsonl"
 passages_path = "data/corpus/passages.jsonl"
-checkpoint_path = "checkpoints/epoch_002"
+checkpoint_path = "checkpoints"
 device = torch.device("cuda")
 
+# argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", 
+                    type=str, 
+                    choices=['Base', 'SingleCarry', 'Multi', 'MultiCarry'], 
+                    required=True)
+args = parser.parse_args()
+if len(sys.argv) == 1:
+    parser.print_help()
+
+model_type = args.model
+epoch = 3
+
 print("Load model")
-model = DPRModel()
-model.load_checkpoint(checkpoint_path)
+if model_type == 'Base':
+    model = DPR_Base()
+elif model_type == 'SingleCarry':
+    model = DPR_SingleCarry()
+elif model_type == 'Multi':
+    model = DPR_Multi()
+elif model_type == 'MultiCarry':
+    model = DPR_MultiCarry()
+else:
+    print("model name error")
+    sys.exit() 
+    
+model.load_checkpoint(Path(checkpoint_path) / f"{model_type}" / f"epoch_{epoch:03d}")
 model.eval()
 model.to(device)
 
