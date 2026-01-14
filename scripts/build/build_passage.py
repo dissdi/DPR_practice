@@ -3,7 +3,7 @@ import json
 from tqdm import tqdm
 from pathlib import Path
 
-tsv_path = "data/downloads/data/wikipedia_split/psgs_w100.tsv" # for full input psgs_w100.tsv
+tsv_path = "data/downloads/data/wikipedia_split/psgs_short.tsv" # switch here psgs_w100 or psgs_short.tsv
 passages_path = 'data/corpus/passages.jsonl'
 
 def tsv_to_jsonl(tsv_path: str, jsonl_path: str) -> None:

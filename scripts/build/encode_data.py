@@ -1,5 +1,5 @@
 import json
-from model.DPRModel import DPRModel
+from model.DPR_SingleCarry import DPRModel
 import numpy as np
 import torch
 from tqdm import tqdm

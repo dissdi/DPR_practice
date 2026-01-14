@@ -4,7 +4,7 @@ import torch
 import os
 import numpy as np
 from tqdm import tqdm
-from model.DPRModel import DPRModel
+from model.DPR_SingleCarry import DPRModel
     
 def get_passage_list(passages_jsonl_path):
     passage_list = []
