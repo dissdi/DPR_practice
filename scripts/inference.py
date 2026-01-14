@@ -65,8 +65,8 @@ elif model_type == 'MultiCarry':
     model = DPR_MultiCarry()
 else:
     print("model name error")
-    sys.exit() 
-    
+    sys.exit()
+
 model.load_checkpoint(Path(checkpoint_path) / f"{model_type}" / f"epoch_{epoch:03d}")
 model.eval()
 model.to(device)
@@ -94,7 +94,7 @@ with open(question_path, 'r') as file:
         json_object = json.loads(line)
         q_text = json_object["question"]
         
-        q_tokens = model.tokenize(q_text, None, max_length)
+        q_tokens = model.tokenize(q_text, max_length)
         q_tokens = {m: v.to(device) for m, v in q_tokens.items()}
         with torch.no_grad():
                 q_vec = model.encode_questions(q_tokens)

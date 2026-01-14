@@ -14,11 +14,11 @@ class DPR_Multi(nn.Module):
         self.p_encoder = BertModel.from_pretrained(f"{epoch_dir}/p_encoder")
         self.tokenizer = BertTokenizer.from_pretrained(f"{epoch_dir}/tokenizer")
         
-    def tokenize(self, text_a, text_b, MAX_LENGTH):
+    def tokenize(self, text_a, text_b):
         if text_b == None:
             tokens = self.tokenizer(
                 text_a,
-                padding="max_length",
+                padding=128,
                 truncation=True,
                 return_tensors="pt",
                 add_special_tokens=False
@@ -26,7 +26,7 @@ class DPR_Multi(nn.Module):
         else:
             tokens = self.tokenizer(
                 text_a, text_b,
-                padding="max_length",
+                padding=128,
                 truncation=True,
                 return_tensors="pt",
                 add_special_tokens=False
@@ -45,20 +45,20 @@ class DPR_Multi(nn.Module):
                 input_ids[0].insert(i, sep_id)
                 attention_mask[0].insert(i, 1)
                 break
-        input_ids = torch.tensor(input_ids[0][:128])
-        attention_mask = torch.tensor(attention_mask[0][:128])
-        return tokens
+        cls_indices = [i for i, val in enumerate(input_ids[0]) if val == cls_id]
+        input_ids = torch.tensor(input_ids[0][:128], dtype=torch.long).unsqueeze(0)
+        attention_mask = torch.tensor(attention_mask[0][:128], dtype=torch.long).unsqueeze(0)
+        tokens["input_ids"] = input_ids
+        tokens["attention_mask"] = attention_mask
+        return tokens, cls_indices
         
-    def encode_questions(self, q_input):
-        return self.q_encoder(**q_input).last_hidden_state[:, 0, :]
+    def encode_questions(self, q_input, cls_indices):
+        h = self.q_encoder(**q_input).last_hidden_state[:, cls_indices, :]
+        return h.mean(dim=1)
 
-    def encode_passages(self, p_input):
-        out =  self.p_encoder(**p_input, output_hidden_states=True)
-        cls0 = out.last_hidden_state[:, 0, :]
-        cls_pooled = torch.zeros_like(cls0)
-        for h in out.hidden_states[1:]:
-            cls_pooled += h[:, 0, :]
-        return cls_pooled/len(out.hidden_states[1:])
+    def encode_passages(self, p_input, cls_indices):
+        h = self.p_encoder(**p_input).last_hidden_state[:, cls_indices, :]
+        return h.mean(dim=1)
         
     def forward(self, q_emb, p_emb):
         return q_emb @ p_emb.T

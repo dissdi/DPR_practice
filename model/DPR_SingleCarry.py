@@ -35,16 +35,14 @@ class DPR_SingleCarry(nn.Module):
         
     def encode_questions(self, q_input):
         out =  self.q_encoder(**q_input, output_hidden_states=True)
-        cls0 = out.last_hidden_state[:, 0, :]
-        cls_pooled = torch.zeros_like(cls0)
+        cls_pooled = torch.zeros_like(out.last_hidden_state[:, 0, :])
         for h in out.hidden_states[1:]:
             cls_pooled += h[:, 0, :]
         return cls_pooled/len(out.hidden_states[1:])
 
     def encode_passages(self, p_input):
         out =  self.p_encoder(**p_input, output_hidden_states=True)
-        cls0 = out.last_hidden_state[:, 0, :]
-        cls_pooled = torch.zeros_like(cls0)
+        cls_pooled = torch.zeros_like(out.last_hidden_state[:, 0, :])
         for h in out.hidden_states[1:]:
             cls_pooled += h[:, 0, :]
         return cls_pooled/len(out.hidden_states[1:])

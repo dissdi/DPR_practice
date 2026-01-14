@@ -100,7 +100,6 @@ num_steps = ceil(len(train_data)/batch)
 for epoch in range(epochs):
     print(f"epoch {epoch}")
     
-    
     pbar = tqdm(range(0, len(train_data), batch), desc="training")
     time_start = time()
     for i in pbar:
